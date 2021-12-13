@@ -6,13 +6,12 @@ Unported License (https://creativecommons.org/licenses/by-nc-sa/3.0/).
 """
 import typing
 
-
 KEYWORDS = ["class", "method", "function", "constructor", "int", "boolean",
-             "char", "void", "var", "static", "field", "let", "do", "if",
-             "else", "while", "return", "true", "false", "null", "this"]
+            "char", "void", "var", "static", "field", "let", "do", "if",
+            "else", "while", "return", "true", "false", "null", "this"]
 
 SYMBOLS = ["{", "}", "[", "]", "(", ")", ".", ",", ";", "+", "-", "*", "/",
-            "&", "|", "<", ">", "=", "~"]
+           "&", "|", "<", ">", "=", "~"]
 
 
 class JackTokenizer:
@@ -43,7 +42,6 @@ class JackTokenizer:
         if self.current >= len(self.tokenized_lines):
             return false
         return true
-
 
     def advance(self) -> None:
         """Gets the next token from the input and makes it the current token. 
@@ -135,21 +133,84 @@ class JackTokenizer:
         """Tokenizes the input stream.
         """
         self.tokenized_lines = []
+        i = 0
+        current_str =""
+        in_string = False
         # split the line from input_lines where there is a space and '(', ')', '{', '}', '.', ',' , ';', '+', '-', '*', '/', '&', '|', '<', '>', '=', '~', '"'
-        for i in range(len(self.input_lines)):
-            for spChar in SYMBOLS:
-                self.input_lines[i] = self.input_lines[i].replace(spChar, " "+spChar+" ")
-            str(self.input_lines[i].replace("'", ""))
-            " ".join(self.input_lines[i].split())
-        for i in range(len(self.input_lines)):
-            self.tokenized_lines.append(self.input_lines[i].split())
-        self.tokenized_lines = [s for S in self.tokenized_lines for s in S]
+        for line in self.input_lines:
+            for chara in range(len(line)):
+                if line[chara] in SYMBOLS and not in_string:
+                    if current_str !="":
+                        self.tokenized_lines.append(current_str)
+                    self.tokenized_lines.append(line[chara])
+                    current_str = ""
+                elif line[chara] == " " and not in_string:
+                    self.tokenized_lines.append(current_str)
+                    current_str = ""
+                elif line[chara] == "\"":  # in case we are in string
+                    in_string = not in_string
+                    current_str += line[chara]
+                    if not in_string:
+                        self.tokenized_lines.append(current_str)
+                        current_str = ""
+                elif not str(line[chara]).isdigit() and str(current_str).isdigit() and not in_string:  #in case integer
+                    self.tokenized_lines.append(current_str)
+                    current_str = line[chara]
+                else:
+                    current_str += line[chara]
+        while i != len(self.tokenized_lines):
+            # remove empty lines
+            if len(self.tokenized_lines[i]) == 0:
+                self.tokenized_lines.pop(i)
+            else:
+                i = i + 1
 
+    def is_next_is_op(self):
+        opar = ["+", "-", "*", "/", "&", "|", "<", ">", "="]
+        if self.tokenized_lines[self.current] in opar:
+            return True
+        return False
 
+    def is_next_is_bracket(self):
+        brack = ["[", "]", "(", ")", "{", "}"]
+        if self.tokenized_lines[self.current] in brack:
+            return True
+        return False
 
+    def eat(self, token: str) -> str:
+        if token != self.tokenized_lines[self.current]:
+            return ""
+        if token == "***":
+            token = self.tokenized_lines[self.current]
+        str_statement = "<" + self.token_type() + ">" + token + "</" + self.token_type() + ">"
+        if self.has_more_tokens():
+            self.advance()
+        return str_statement
 
+    def get_op(self):
+        return self.tokenized_lines[self.current]
 
+    def is_next_dot(self):
+        if self.tokenized_lines[self.current + 1] == ".":
+            return True
+        return False
 
+    def is_next_statment(self):
+        if self.tokenized_lines[self.current] in ["let", "if", "while", "do", "return"]:
+            return self.tokenized_lines[self.current]
+        return ""
 
+    def is_next_var_dec(self):
+        if self.tokenized_lines[self.current] == "var":
+            return True
+        return False
 
+    def is_next_class_var_dec(self):
+        if self.tokenized_lines[self.current] in ["static", "field"]:
+            return True
+        return False
 
+    def is_next_class_sub_dec(self):
+        if self.tokenized_lines[self.current] in ["constructor", "function", "method"]:
+            return True
+        return False
