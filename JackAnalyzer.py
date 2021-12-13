@@ -8,7 +8,6 @@ import os
 import sys
 import typing
 from CompilationEngine import CompilationEngine
-from JackTokenizer import JackTokenizer
 
 
 def analyze_file(
@@ -20,6 +19,8 @@ def analyze_file(
         output_file (typing.TextIO): writes all output to this file.
     """
     # Your code goes here!
+    comp_en = CompilationEngine(input_file, output_file)
+    comp_en.compile_class()
     pass
 
 

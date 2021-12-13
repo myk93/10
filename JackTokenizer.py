@@ -31,7 +31,7 @@ class JackTokenizer:
         self.input_lines = input_stream.read().splitlines()
         self.cleanup_lines()
         self.tokenize_lines()
-        self.current = -1
+        self.current = 0
 
     def has_more_tokens(self) -> bool:
         """Do we have more tokens in the input?
@@ -40,8 +40,8 @@ class JackTokenizer:
             bool: True if there are more tokens, False otherwise.
         """
         if self.current >= len(self.tokenized_lines):
-            return false
-        return true
+            return False
+        return True
 
     def advance(self) -> None:
         """Gets the next token from the input and makes it the current token. 
@@ -118,11 +118,17 @@ class JackTokenizer:
         i = 0
         while i != len(self.input_lines):
             # remove empty lines and inline comments
-            if len(self.input_lines[i].replace(" ", "")) == 0 or self.input_lines[i].replace(" ", "")[0] == "/":
+            if "//" in self.input_lines[i]:
+               self.input_lines[i] = self.input_lines[i].split("//")[0]
+            elif len(self.input_lines[i].replace(" ", "")) == 0 or self.input_lines[i].replace(" ", "")[0:2] == "//":
                 self.input_lines.pop(i)
+
             # remove lines between /* and */
             elif self.input_lines[i].replace(" ", "")[0:2] == "/*":
-                while self.input_lines[i].replace(" ", "")[0:2] != "*/":
+                if  "*/" in self.input_lines[i].replace(" ", "") :
+                    self.input_lines.pop(i)
+                    continue
+                while len(self.input_lines[i].replace(" ", "")) == 0 or self.input_lines[i].replace(" ", "")[0:2] != "*/":
                     self.input_lines.pop(i)
                 self.input_lines.pop(i)
             else:
@@ -134,13 +140,13 @@ class JackTokenizer:
         """
         self.tokenized_lines = []
         i = 0
-        current_str =""
+        current_str = ""
         in_string = False
         # split the line from input_lines where there is a space and '(', ')', '{', '}', '.', ',' , ';', '+', '-', '*', '/', '&', '|', '<', '>', '=', '~', '"'
         for line in self.input_lines:
             for chara in range(len(line)):
                 if line[chara] in SYMBOLS and not in_string:
-                    if current_str !="":
+                    if current_str != "":
                         self.tokenized_lines.append(current_str)
                     self.tokenized_lines.append(line[chara])
                     current_str = ""
@@ -153,7 +159,7 @@ class JackTokenizer:
                     if not in_string:
                         self.tokenized_lines.append(current_str)
                         current_str = ""
-                elif not str(line[chara]).isdigit() and str(current_str).isdigit() and not in_string:  #in case integer
+                elif not str(line[chara]).isdigit() and str(current_str).isdigit() and not in_string:  # in case integer
                     self.tokenized_lines.append(current_str)
                     current_str = line[chara]
                 else:
@@ -165,24 +171,13 @@ class JackTokenizer:
             else:
                 i = i + 1
 
-    def is_next_is_op(self):
-        opar = ["+", "-", "*", "/", "&", "|", "<", ">", "="]
-        if self.tokenized_lines[self.current] in opar:
-            return True
-        return False
-
-    def is_next_is_bracket(self):
-        brack = ["[", "]", "(", ")", "{", "}"]
-        if self.tokenized_lines[self.current] in brack:
-            return True
-        return False
-
     def eat(self, token: str) -> str:
-        if token != self.tokenized_lines[self.current]:
-            return ""
         if token == "***":
             token = self.tokenized_lines[self.current]
-        str_statement = "<" + self.token_type() + ">" + token + "</" + self.token_type() + ">"
+        if token != self.tokenized_lines[self.current]:
+            return ""
+
+        str_statement = "<" + self.token_type().lower() + ">" + token + "</" + self.token_type().lower() + ">" +"\n"
         if self.has_more_tokens():
             self.advance()
         return str_statement
@@ -191,7 +186,7 @@ class JackTokenizer:
         return self.tokenized_lines[self.current]
 
     def is_next_dot(self):
-        if self.tokenized_lines[self.current + 1] == ".":
+        if self.tokenized_lines[self.current] == ".":
             return True
         return False
 
@@ -214,3 +209,56 @@ class JackTokenizer:
         if self.tokenized_lines[self.current] in ["constructor", "function", "method"]:
             return True
         return False
+
+    def is_next_k_w_const(self):
+        if self.tokenized_lines[self.current] in ["true", "false", "null", "this"]:
+            return True
+        return False
+
+    def is_next_is_op(self):
+        opar = ["+", "-", "*", "/", "&", "|", "<", ">", "="]
+        if self.tokenized_lines[self.current] in opar:
+            return True
+        return False
+
+    def is_next_is_un_op(self):
+        opar = ["-", "~"]
+        if self.tokenized_lines[self.current] in opar:
+            return True
+        return False
+
+    def is_next_is_bracket(self):
+        brack = ["[", "]"]
+        if self.tokenized_lines[self.current] in brack:
+            return True
+        return False
+
+    def is_next_is_par(self):
+        brack = ["(", ")"]
+        if self.tokenized_lines[self.current] in brack:
+            return True
+        return False
+
+    def is_next_is_left_par(self):
+        brack = ["("]
+        if self.tokenized_lines[self.current] in brack:
+            return True
+        return False
+
+    def is_next_is_right_par(self):
+        brack = [")"]
+        if self.tokenized_lines[self.current] in brack:
+            return True
+        return False
+
+    def is_next_is_cur_bracket(self):
+        brack = ["{", "}"]
+        if self.tokenized_lines[self.current] in brack:
+            return True
+        return False
+
+    def is_next_poi_br(self):
+        if self.tokenized_lines[self.current] == ";":
+            return True
+        return False
+        pass
